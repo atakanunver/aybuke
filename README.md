@@ -1,5 +1,7 @@
 # Aybüke
 
+![Aybüke](assets/aybuke-logo.png)
+
 Sınıf akıllı tahtasında çalışan, Gemini Live tabanlı sesli öğretmen asistanı.
 **Tek başına çalışır:** sunucu, veritabanı, yerel model ya da RAG yoktur; tek
 dış bağımlılık Gemini API'sidir.

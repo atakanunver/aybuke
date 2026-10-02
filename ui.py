@@ -31,7 +31,7 @@ from PyQt6.QtCore import (
     QPointF, QRectF, Qt, QTimer, pyqtSignal,
 )
 from PyQt6.QtGui import (
-    QBrush, QColor, QDragEnterEvent, QDropEvent, QFont,
+    QBrush, QColor, QDragEnterEvent, QDropEvent, QFont, QFontDatabase, QIcon,
     QKeySequence, QPainter, QPainterPath, QPainterPathStroker, QPen, QPixmap,
     QShortcut,
 )
@@ -47,6 +47,26 @@ def _base_dir() -> Path:
     return Path(__file__).resolve().parent
 
 BASE_DIR   = _base_dir()
+
+# ── Yazı tipleri ─────────────────────────────────────────────────────────────
+# Arayüzün tamamı tek aile: Lexend (okuma kolaylığı için tasarlanmış, Türkçe
+# tam; OFL, assets/fonts/ içinde gömülü — sistemde kurulu olması gerekmez).
+# Hizalı rakam isteyen log/metrik metinleri tahtalarda kurulu DejaVu Sans
+# Mono'da kalır. Dosya yüklenemezse Qt sessizce sistem sans'ına düşer.
+YAZI      = "Lexend"
+YAZI_MONO = "DejaVu Sans Mono"
+_yazi_yuklendi = False
+
+
+def yazi_tiplerini_yukle() -> None:
+    """Gömülü fontları uygulamaya kaydeder; QApplication kurulduktan sonra,
+    pencere çizilmeden önce bir kez çağrılır."""
+    global _yazi_yuklendi
+    if _yazi_yuklendi:
+        return
+    for dosya in (BASE_DIR / "assets" / "fonts").glob("*.ttf"):
+        QFontDatabase.addApplicationFont(str(dosya))
+    _yazi_yuklendi = True
 
 # Tercih edilen boyut; gerçek boyut ekrana göre kısılır (bkz. _pencere_boyu).
 # Önceki sabit 980x700 küçük/ölçekli ekranlarda taşıyordu.
@@ -125,44 +145,37 @@ def _pencere_onceki_durumu(tam_ekran: bool, buyutulmus: bool) -> str:
 
 class C:
     """
-    "İlim Işığı" teması. Beş renk, tezhip/minyatür geleneğinin
-    klasik beş pigmentine karşılık gelir — rastgele bir hue kaydırması değil:
-    yaldız (PRI, marka/kimlik), vermiyon (ACC, "ANLATIYOR"), lacivert taşı
-    (ACC2, "DÜŞÜNÜYOR/İŞLİYOR"), patina yeşili (GREEN, "DİNLİYOR"), mürekkep
-    kırmızısı (RED/MUTED_C, hata/susturma). Durumlar arasında hâlâ net bir
-    sıcak/soğuk ayrımı korunuyor (ACC sıcak, ACC2 soğuk) — HUD durumu yalnızca
-    renkle değil metinle de gösterildiği için (ör. "● ANLATIYOR") bu ayrım
-    zorunlu değil ama okunabilirliği bozmamak için bilerek korundu.
+    "İstanbul gecesi" teması — Aybüke afişinin kendi paletinden: gece laciverti
+    zemin, neon camgöbeği ışık, altın varak kimlik, İznik turkuazı, lale
+    kırmızısı. Durumlar renkle VE metinle gösterilir: altın kimlik/başlık,
+    ışık (ACC) "Anlatıyor", lavanta (ACC2) "Düşünüyor/İşliyor", turkuaz
+    (GREEN) "Dinliyor", lale (RED/MUTED_C) hata ve mikrofon kapalı.
 
     Bu sınıf TEK kaynak: `ui.py`'deki neredeyse her `setStyleSheet`/`QPen`/
-    `QColor` çağrısı buradan f-string ile besleniyor (HudCanvas'ın halka/
-    halo/parçacık çizimi dahil), o yüzden bu bloğu değiştirmek tek başına
-    uygulamanın büyük kısmını yeniden temalıyor. İstisnalar (bilerek
-    DOKUNULMADI): `KALEM_RENK` (öğrenci çizim rengi, marka kimliğinden
-    bağımsız) ve dosya-türü rozet renkleri (image/video/pdf vb. — sabit bir
-    kongre, tema değil).
+    `QColor` çağrısı buradan beslenir. İstisnalar: `KALEM_RENK` (çizim rengi)
+    ve dosya-türü rozet renkleri (sabit bir kongre, tema değil).
     """
-    BG        = "#090b1c"
-    PANEL     = "#10143a"
-    PANEL2    = "#131842"
-    BORDER    = "#282c54"
-    BORDER_B  = "#4a4f82"
-    BORDER_A  = "#38395f"
-    PRI       = "#d4af6a"   # yaldız
-    PRI_DIM   = "#8a7040"
-    PRI_GHO   = "#241d0c"
-    ACC       = "#c8683f"   # vermiyon
-    ACC2      = "#7f8fd4"   # lacivert taşı
-    GREEN     = "#5fae7e"   # patina yeşili
-    GREEN_D   = "#3f7a5c"
-    RED       = "#d1495c"   # mürekkep kırmızısı
-    MUTED_C   = "#d1495c"
-    TEXT      = "#f0e6cf"
-    TEXT_DIM  = "#7a7398"
-    TEXT_MED  = "#b7a988"
-    WHITE     = "#f5ecd8"
-    DARK      = "#0d1030"
-    BAR_BG    = "#171b42"
+    BG        = "#061226"   # gece
+    PANEL     = "#0c2140"   # lacivert
+    PANEL2    = "#102a4f"
+    BORDER    = "#1b3a63"
+    BORDER_B  = "#2f5d8f"
+    BORDER_A  = "#244a76"
+    PRI       = "#e2b85c"   # altın varak
+    PRI_DIM   = "#9c7c3a"
+    PRI_GHO   = "#2a2410"
+    ACC       = "#4ad8ff"   # ışık (neon camgöbeği)
+    ACC2      = "#9fa8ff"   # lavanta
+    GREEN     = "#2fb5a8"   # İznik turkuazı
+    GREEN_D   = "#1f7d74"
+    RED       = "#e05a6b"   # lale kırmızısı
+    MUTED_C   = "#e05a6b"
+    TEXT      = "#e8f1ff"
+    TEXT_DIM  = "#7d93b5"
+    TEXT_MED  = "#b4c6e0"
+    WHITE     = "#f4f8ff"
+    DARK      = "#081a33"
+    BAR_BG    = "#0f2747"
 
 
 def qcol(h: str, a: int = 255) -> QColor:
@@ -338,13 +351,107 @@ class _SysMetrics:
 
 _metrics = _SysMetrics()
 
+def _yildiz_noktalari(cx: float, cy: float, r: float, aci: float) -> list[QPointF]:
+    """Sekiz köşeli Selçuklu yıldızının dış hatları: biri 45° döndürülmüş iki
+    karenin birleşimi. 16 nokta, dış ve iç köşeler sırayla."""
+    ic = r * math.cos(math.radians(45)) / math.cos(math.radians(22.5))
+    noktalar = []
+    for i in range(16):
+        a = math.radians(aci + i * 22.5)
+        rr = r if i % 2 == 0 else ic
+        noktalar.append(QPointF(cx + rr * math.cos(a), cy + rr * math.sin(a)))
+    return noktalar
+
+
+def amblem_ciz(p: QPainter, cx: float, cy: float, r: float, aci: float,
+               isik: QColor, altin: QColor, parlaklik: float = 1.0,
+               yanan_kenar: int | None = None) -> None:
+    """Aybüke amblemi: altın dış halka, dönen sekiz köşeli yıldız, içte ters
+    dönen küçük yıldız ve girih rozeti. HUD ve logo aynı çizimi kullanır.
+
+    `parlaklik` 0..1 ışık katmanının yoğunluğu (konuşurken sese göre),
+    `yanan_kenar` düşünürken sırayla parlayan tek kenarın sırası (0..15)."""
+    p.setBrush(Qt.BrushStyle.NoBrush)
+
+    # Işık hâlesi — yıldızın arkasında yumuşak bir parıltı
+    for i in range(6):
+        hr = r * (1.05 + i * 0.07)
+        a = int(46 * parlaklik * (1 - i / 6))
+        p.setPen(QPen(QColor(isik.red(), isik.green(), isik.blue(), a), 3))
+        p.drawEllipse(QRectF(cx - hr, cy - hr, hr * 2, hr * 2))
+
+    # Altın dış halka ve on altı küçük baklava
+    p.setPen(QPen(altin, max(1.5, r * 0.018)))
+    p.drawEllipse(QRectF(cx - r * 1.02, cy - r * 1.02, r * 2.04, r * 2.04))
+    for i in range(16):
+        a = math.radians(-aci * 0.5 + i * 22.5)
+        bx, by = cx + r * 1.02 * math.cos(a), cy + r * 1.02 * math.sin(a)
+        s = r * 0.035
+        yol = QPainterPath()
+        yol.moveTo(bx + s * math.cos(a), by + s * math.sin(a))
+        yol.lineTo(bx + s * 0.55 * math.cos(a + math.pi / 2), by + s * 0.55 * math.sin(a + math.pi / 2))
+        yol.lineTo(bx - s * math.cos(a), by - s * math.sin(a))
+        yol.lineTo(bx + s * 0.55 * math.cos(a - math.pi / 2), by + s * 0.55 * math.sin(a - math.pi / 2))
+        yol.closeSubpath()
+        p.fillPath(yol, altin)
+
+    # Büyük yıldız — ışık çizgisi, iç dolgu çok saydam
+    dis = _yildiz_noktalari(cx, cy, r * 0.88, aci)
+    yol = QPainterPath(dis[0])
+    for n in dis[1:]:
+        yol.lineTo(n)
+    yol.closeSubpath()
+    p.fillPath(yol, QColor(isik.red(), isik.green(), isik.blue(), int(18 + 30 * parlaklik)))
+    p.setPen(QPen(isik, max(1.5, r * 0.022)))
+    p.drawPath(yol)
+    if yanan_kenar is not None:
+        a1, a2 = dis[yanan_kenar % 16], dis[(yanan_kenar + 1) % 16]
+        p.setPen(QPen(QColor(255, 255, 255, 230), max(2.0, r * 0.03)))
+        p.drawLine(a1, a2)
+
+    # Yıldızı oluşturan iki kare — ince altın kesişim çizgileri
+    p.setPen(QPen(QColor(altin.red(), altin.green(), altin.blue(), 120), max(1.0, r * 0.01)))
+    for ek in (0, 45):
+        kare = QPainterPath()
+        for k in range(5):
+            a = math.radians(aci + ek + k * 90)
+            pt = QPointF(cx + r * 0.88 * math.cos(a), cy + r * 0.88 * math.sin(a))
+            kare.moveTo(pt) if k == 0 else kare.lineTo(pt)
+        p.drawPath(kare)
+
+    # İçte ters dönen küçük yıldız ve girih rozeti
+    ic = _yildiz_noktalari(cx, cy, r * 0.42, -aci * 1.6 + 22.5)
+    yol = QPainterPath(ic[0])
+    for n in ic[1:]:
+        yol.lineTo(n)
+    yol.closeSubpath()
+    p.fillPath(yol, QColor(altin.red(), altin.green(), altin.blue(), 60))
+    p.setPen(QPen(altin, max(1.2, r * 0.016)))
+    p.drawPath(yol)
+    sekizgen = QPainterPath()
+    for k in range(9):
+        a = math.radians(-aci * 1.6 + 22.5 + k * 45)
+        pt = QPointF(cx + r * 0.24 * math.cos(a), cy + r * 0.24 * math.sin(a))
+        sekizgen.moveTo(pt) if k == 0 else sekizgen.lineTo(pt)
+    p.drawPath(sekizgen)
+    cr = r * (0.10 + 0.03 * parlaklik)
+    p.setBrush(QBrush(QColor(isik.red(), isik.green(), isik.blue(), int(150 + 100 * parlaklik))))
+    p.setPen(Qt.PenStyle.NoPen)
+    p.drawEllipse(QRectF(cx - cr, cy - cr, cr * 2, cr * 2))
+    p.setBrush(Qt.BrushStyle.NoBrush)
+
+
 class HudCanvas(QWidget):
+    """Merkez gösterge: canlı Selçuklu yıldızı. Durum renkle ve tek satırlık
+    metinle gösterilir — dinlerken turkuaz ve yavaş nefes, konuşurken ışık
+    rengi ve sese göre parıltı, düşünürken kenarlar sırayla yanar, mikrofon
+    kapalıyken lale kırmızısı ve hareketsiz."""
+
     def __init__(self, face_path: str, parent=None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent)
-        # HiDPI ölçeklemede mantıksal ekran küçülüyor (ör. 1104x590) ve
-        # 300'lük dikey minimum tüm pencereyi ekranın dışına taşırıyordu.
-        # HUD daralabilir; kırpılmasındansa küçülmesi yeğdir.
+        # HiDPI ölçeklemede mantıksal ekran küçülebiliyor; HUD kırpılmak
+        # yerine küçülsün diye küçük bir alt sınır.
         self.setMinimumSize(200, 180)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
@@ -352,177 +459,55 @@ class HudCanvas(QWidget):
         self.speaking = False
         self.state    = "INITIALISING"
 
-        self._tick       = 0
-        self._scale      = 1.0
-        self._tgt_scale  = 1.0
-        self._halo       = 55.0
-        self._tgt_halo   = 55.0
-        self._last_t     = time.time()
-        self._scan       = 0.0
-        self._scan2      = 180.0
-        self._rings      = [0.0, 120.0, 240.0]
-        self._pulses: list[float] = [0.0, 50.0, 100.0]
-        self._blink      = True
-        self._blink_tick = 0
-        self._particles: list[list[float]] = []
-        self._face_px: QPixmap | None = None
-        self._load_face(face_path)
-
-        # ── Animated GIF core (rendered in the centre of the HUD) ──────────────
-        # Frames are pre-processed in a background thread so startup never freezes.
-        # The black background of the GIF is keyed out (alpha = brightness) so only
-        # the glowing ring shows and composites cleanly over the HUD.
-        self._gif_raw: list[bytes] | None = None     # PNG bytes per frame (built off-thread)
-        self._gif_durations: list[int]    = []        # ms per frame
-        self._gif_pix: dict[int, QPixmap] = {}         # lazy QPixmap cache (main thread)
-        self._gif_ready   = False
-        self._gif_idx     = 0
-        self._gif_acc     = 0.0                         # accumulated ms toward next frame
-        self._load_gif_async(self._find_gif_path())
+        self._aci        = 0.0
+        self._parlaklik  = 0.25
+        self._hedef      = 0.25
+        self._son_t      = time.time()
+        self._kenar      = 0
+        self._kenar_tick = 0
+        self._dalga: list[float] = [0.0] * 28
 
         self._tmr = QTimer(self)
         self._tmr.timeout.connect(self._step)
-        self._tmr.start(16)
+        self._tmr.start(33)          # ~30 fps: zayıf işlemcide yeterince akıcı
 
-    # ── Animated GIF support ──────────────────────────────────────────────────
-    def _find_gif_path(self) -> str | None:
-        """Merkez HUD animasyonunu bul (proje kökünde aybuke.gif; yoksa metin)."""
-        for name in ("aybuke.gif", "face.gif"):
-            cand = BASE_DIR / name
-            if cand.exists():
-                return str(cand)
-        return None
-
-    def _load_gif_async(self, path: str | None):
-        if not path:
-            return
-
-        def worker():
-            try:
-                from PIL import Image, ImageSequence, ImageChops
-                import io
-                im      = Image.open(path)
-                target  = 380                  # render size of each square frame
-                raw, durs = [], []
-                for frame in ImageSequence.Iterator(im):
-                    f = frame.convert("RGBA")
-                    w, h = f.size
-                    s = min(w, h)              # centre-crop to a square
-                    left, top = (w - s) // 2, (h - s) // 2
-                    f = f.crop((left, top, left + s, top + s)).resize(
-                        (target, target), Image.LANCZOS
-                    )
-                    # Key out black: alpha = max(r,g,b) → glow keeps its soft falloff
-                    r, g, b, _ = f.split()
-                    mx = ImageChops.lighter(ImageChops.lighter(r, g), b)
-                    f.putalpha(mx)
-                    buf = io.BytesIO(); f.save(buf, format="PNG")
-                    raw.append(buf.getvalue())
-                    durs.append(int(frame.info.get("duration", 70) or 70))
-                self._gif_raw       = raw
-                self._gif_durations = durs
-                self._gif_ready     = bool(raw)
-                print(f"[HUD] GIF ready: {len(raw)} frames")
-            except Exception as e:
-                print(f"[HUD] GIF load failed: {e}")
-                self._gif_ready = False
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _has_gif(self) -> bool:
-        return bool(self._gif_ready and self._gif_raw)
-
-    def _gif_pixmap(self, idx: int) -> QPixmap | None:
-        """Lazily build (and cache) the QPixmap for a frame on the main thread."""
-        if not self._gif_raw:
-            return None
-        px = self._gif_pix.get(idx)
-        if px is None:
-            px = QPixmap()
-            px.loadFromData(self._gif_raw[idx])
-            self._gif_pix[idx] = px
-        return px
-
-    def _load_face(self, path: str):
-        try:
-            from PIL import Image, ImageDraw
-            import io
-            img = Image.open(path).convert("RGBA")
-            sz  = min(img.size)
-            img = img.resize((sz, sz), Image.LANCZOS)
-            mk  = Image.new("L", (sz, sz), 0)
-            ImageDraw.Draw(mk).ellipse((2, 2, sz - 2, sz - 2), fill=255)
-            img.putalpha(mk)
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            px = QPixmap(); px.loadFromData(buf.getvalue())
-            self._face_px = px
-        except Exception:
-            self._face_px = None
+    def _renk(self) -> QColor:
+        if self.muted:
+            return qcol(C.RED)
+        if self.speaking:
+            return qcol(C.ACC)
+        if self.state in ("THINKING", "PROCESSING"):
+            return qcol(C.ACC2)
+        if self.state == "LISTENING":
+            return qcol(C.GREEN)
+        return qcol(C.PRI_DIM)
 
     def _step(self):
-        self._tick += 1
-        now = time.time()
-        if now - self._last_t > (0.12 if self.speaking else 0.5):
-            if self.speaking:
-                self._tgt_scale = random.uniform(1.06, 1.14)
-                self._tgt_halo  = random.uniform(145, 190)
-            elif self.muted:
-                self._tgt_scale = random.uniform(0.998, 1.002)
-                self._tgt_halo  = random.uniform(15, 28)
-            else:
-                self._tgt_scale = random.uniform(1.001, 1.008)
-                self._tgt_halo  = random.uniform(48, 68)
-            self._last_t = now
+        simdi = time.time()
+        if self.speaking:
+            if simdi - self._son_t > 0.11:
+                self._hedef = random.uniform(0.55, 1.0)
+                self._son_t = simdi
+            hiz = 0.45
+        elif self.muted:
+            self._hedef, hiz = 0.0, 0.2
+        else:
+            # Yavaş nefes: 4 sn'lik sinüs
+            self._hedef = 0.22 + 0.12 * (1 + math.sin(simdi * math.pi / 2)) / 2
+            hiz = 0.12
+        self._parlaklik += (self._hedef - self._parlaklik) * hiz
 
-        sp = 0.38 if self.speaking else 0.15
-        self._scale += (self._tgt_scale - self._scale) * sp
-        self._halo  += (self._tgt_halo  - self._halo)  * sp
+        if not self.muted:
+            self._aci = (self._aci + (0.55 if self.speaking else 0.18)) % 360
 
-        speeds = [1.3, -0.9, 2.0] if self.speaking else [0.55, -0.35, 0.9]
-        for i, spd in enumerate(speeds):
-            self._rings[i] = (self._rings[i] + spd) % 360
+        if self.state in ("THINKING", "PROCESSING") and not self.speaking:
+            self._kenar_tick += 1
+            if self._kenar_tick >= 3:
+                self._kenar = (self._kenar + 1) % 16
+                self._kenar_tick = 0
 
-        self._scan  = (self._scan  + (3.0 if self.speaking else 1.3)) % 360
-        self._scan2 = (self._scan2 + (-2.0 if self.speaking else -0.75)) % 360
-
-        fw  = min(self.width(), self.height())
-        lim = fw * 0.74
-        spd = 4.2 if self.speaking else 2.0
-        self._pulses = [r + spd for r in self._pulses if r + spd < lim]
-        if len(self._pulses) < 3 and random.random() < (0.07 if self.speaking else 0.025):
-            self._pulses.append(0.0)
-
-        if self.speaking and random.random() < 0.28:
-            cx, cy = self.width() / 2, self.height() / 2
-            ang = random.uniform(0, 2 * math.pi)
-            r_s = fw * 0.28
-            self._particles.append([
-                cx + math.cos(ang) * r_s, cy + math.sin(ang) * r_s,
-                math.cos(ang) * random.uniform(0.9, 2.4),
-                math.sin(ang) * random.uniform(0.9, 2.4) - 0.4, 1.0,
-            ])
-        self._particles = [
-            [p[0]+p[2], p[1]+p[3], p[2]*0.97, p[3]*0.97, p[4]-0.028]
-            for p in self._particles if p[4] > 0
-        ]
-
-        self._blink_tick += 1
-        if self._blink_tick >= 38:
-            self._blink = not self._blink
-            self._blink_tick = 0
-
-        # advance the centre GIF based on the fixed 16 ms tick (smooth, drift-free)
-        if self._has_gif():
-            self._gif_acc += 16.0
-            dur = self._gif_durations[self._gif_idx] if self._gif_durations else 70
-            # speed the loop up a touch while speaking for an energetic feel
-            if self.speaking:
-                dur = max(30, int(dur * 0.7))
-            if self._gif_acc >= dur:
-                self._gif_acc = 0.0
-                self._gif_idx = (self._gif_idx + 1) % len(self._gif_raw)
-
+        self._dalga = self._dalga[1:] + [
+            self._parlaklik * random.uniform(0.6, 1.0) if self.speaking else 0.0]
         self.update()
 
     def paintEvent(self, _):
@@ -531,172 +516,67 @@ class HudCanvas(QWidget):
         p.fillRect(self.rect(), qcol(C.BG))
 
         W, H = self.width(), self.height()
-        cx, cy = W / 2, H / 2
-        fw = min(W, H)
+        fw = min(W, H * 0.86)
+        cx, cy = W / 2, H * 0.44
 
-        # grid dots
-        p.setPen(QPen(qcol(C.PRI_GHO), 1))
-        for x in range(0, W, 48):
-            for y in range(0, H, 48):
-                p.drawPoint(x, y)
-
-        r_face = fw * 0.31
-        _gif   = self._has_gif()
-
-        # halo glow (suppressed when the GIF ring is the centrepiece)
-        if not _gif:
-            for i in range(10):
-                r   = r_face * (1.8 - i * 0.08)
-                frc = 1.0 - i / 10
-                a   = max(0, min(255, int(self._halo * 0.085 * frc)))
-                col = qcol(C.MUTED_C if self.muted else C.PRI, a)
-                p.setPen(QPen(col, 1.5)); p.setBrush(Qt.BrushStyle.NoBrush)
-                p.drawEllipse(QRectF(cx - r, cy - r, r * 2, r * 2))
-
-        # pulse rings
-        for pr in self._pulses:
-            a   = max(0, int(230 * (1.0 - pr / (fw * 0.74))))
-            col = qcol(C.MUTED_C if self.muted else C.PRI, a)
-            p.setPen(QPen(col, 1.5)); p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawEllipse(QRectF(cx - pr, cy - pr, pr * 2, pr * 2))
-
-        # spinning arc rings (hidden behind the GIF to keep the centre clean)
-        if not _gif:
-            for idx, (r_frac, w_r, arc_l, gap) in enumerate(
-                [(0.48, 3, 115, 78), (0.40, 2, 78, 55), (0.32, 1, 56, 40)]
-            ):
-                ring_r = fw * r_frac
-                base   = self._rings[idx]
-                a_val  = max(0, min(255, int(self._halo * (1.0 - idx * 0.18))))
-                col    = qcol(C.MUTED_C if self.muted else C.PRI, a_val)
-                p.setPen(QPen(col, w_r)); p.setBrush(Qt.BrushStyle.NoBrush)
-                angle = base
-                rect  = QRectF(cx - ring_r, cy - ring_r, ring_r * 2, ring_r * 2)
-                while angle < base + 360:
-                    p.drawArc(rect, int(angle * 16), int(arc_l * 16))
-                    angle += arc_l + gap
-
-        # scanners
-        sr = fw * 0.50
-        sa = min(255, int(self._halo * 1.5))
-        ex = 75 if self.speaking else 44
-        p.setPen(QPen(qcol(C.MUTED_C if self.muted else C.PRI, sa), 2.5))
+        # Zemin: çok soluk, büyük ölçekli yıldız örgüsü (girih karosu izi)
+        p.setPen(QPen(qcol(C.PRI, 14), 1))
         p.setBrush(Qt.BrushStyle.NoBrush)
-        srect = QRectF(cx - sr, cy - sr, sr * 2, sr * 2)
-        p.drawArc(srect, int(self._scan * 16), int(ex * 16))
-        p.setPen(QPen(qcol(C.ACC, sa // 2), 1.5))
-        p.drawArc(srect, int(self._scan2 * 16), int(ex * 16))
+        adim = max(120.0, fw * 0.42)
+        y = -adim / 2
+        while y < H + adim:
+            x = -adim / 2 + (adim / 2 if int(y // adim) % 2 else 0)
+            while x < W + adim:
+                yol = QPainterPath()
+                nk = _yildiz_noktalari(x, y, adim * 0.36, 0)
+                yol.moveTo(nk[0])
+                for n in nk[1:]:
+                    yol.lineTo(n)
+                yol.closeSubpath()
+                p.drawPath(yol)
+                x += adim
+            y += adim
 
-        # tick marks
-        t_out, t_in = fw * 0.497, fw * 0.474
-        p.setPen(QPen(qcol(C.PRI, 140), 1))
-        for deg in range(0, 360, 10):
-            rad = math.radians(deg)
-            inn = t_in if deg % 30 == 0 else t_in + 6
-            p.drawLine(
-                QPointF(cx + t_out * math.cos(rad), cy - t_out * math.sin(rad)),
-                QPointF(cx + inn  * math.cos(rad), cy - inn  * math.sin(rad)),
-            )
+        renk = self._renk()
+        dusunuyor = self.state in ("THINKING", "PROCESSING") and not self.speaking
+        amblem_ciz(p, cx, cy, fw * 0.36, self._aci, renk, qcol(C.PRI),
+                   parlaklik=self._parlaklik,
+                   yanan_kenar=self._kenar if dusunuyor else None)
 
-        # crosshair
-        ch_r, gap_h = fw * 0.51, fw * 0.16
-        p.setPen(QPen(qcol(C.PRI, int(self._halo * 0.5)), 1))
-        p.drawLine(QPointF(cx - ch_r, cy), QPointF(cx - gap_h, cy))
-        p.drawLine(QPointF(cx + gap_h, cy), QPointF(cx + ch_r, cy))
-        p.drawLine(QPointF(cx, cy - ch_r), QPointF(cx, cy - gap_h))
-        p.drawLine(QPointF(cx, cy + gap_h), QPointF(cx, cy + ch_r))
-
-        # corner brackets
-        bl = 24
-        bc = qcol(C.PRI, 210)
-        hl, hr = cx - fw // 2, cx + fw // 2
-        ht, hb = cy - fw // 2, cy + fw // 2
-        p.setPen(QPen(bc, 2))
-        for bx, by, dx, dy in [(hl,ht,1,1),(hr,ht,-1,1),(hl,hb,1,-1),(hr,hb,-1,-1)]:
-            p.drawLine(QPointF(bx, by), QPointF(bx + dx * bl, by))
-            p.drawLine(QPointF(bx, by), QPointF(bx, by + dy * bl))
-
-        # centre element: animated GIF → static face → procedural orb (fallback chain)
-        if _gif:
-            gpx = self._gif_pixmap(self._gif_idx)
-            if gpx is not None:
-                gsz    = int(fw * 0.74 * self._scale)
-                scaled = gpx.scaled(
-                    gsz, gsz,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                )
-                # mute tint: drop toward red by compositing when muted
-                p.setOpacity(0.55 if self.muted else 1.0)
-                p.drawPixmap(int(cx - gsz / 2), int(cy - gsz / 2), scaled)
-                p.setOpacity(1.0)
-        elif self._face_px:
-            fsz    = int(fw * 0.62 * self._scale)
-            scaled = self._face_px.scaled(
-                fsz, fsz,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            p.drawPixmap(int(cx - fsz / 2), int(cy - fsz / 2), scaled)
-        else:
-            orb_r = int(fw * 0.27 * self._scale)
-            oc    = (200, 0, 50) if self.muted else (0, 60, 110)
-            for i in range(8, 0, -1):
-                r2  = int(orb_r * i / 8)
-                frc = i / 8
-                a   = max(0, min(255, int(self._halo * 1.1 * frc)))
-                p.setBrush(QBrush(QColor(int(oc[0]*frc), int(oc[1]*frc), int(oc[2]*frc), a)))
-                p.setPen(Qt.PenStyle.NoPen)
-                p.drawEllipse(QRectF(cx - r2, cy - r2, r2 * 2, r2 * 2))
-            p.setPen(QPen(qcol(C.PRI, min(255, int(self._halo * 2))), 1))
-            p.setFont(QFont("Courier New", 13, QFont.Weight.Bold))
-            p.drawText(QRectF(cx - 80, cy - 14, 160, 28),
-                       Qt.AlignmentFlag.AlignCenter, "AYBÜKE")
-
-        # particles
-        for pt in self._particles:
-            a = max(0, min(255, int(pt[4] * 255)))
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QBrush(qcol(C.PRI, a)))
-            p.drawEllipse(QPointF(pt[0], pt[1]), 2.5, 2.5)
-
-        # status text
-        sy = cy + fw * 0.40
+        # Durum — cümle düzeninde, tek satır
         if self.muted:
-            txt, col = "⊘  MİKROFON KAPALI", qcol(C.MUTED_C)
+            txt = "Mikrofon kapalı"
         elif self.speaking:
-            txt, col = "●  ANLATIYOR",  qcol(C.ACC)
+            txt = "Anlatıyor"
         elif self.state == "THINKING":
-            sym = "◈" if self._blink else "◇"
-            txt, col = f"{sym}  DÜŞÜNÜYOR",  qcol(C.ACC2)
+            txt = "Düşünüyor"
         elif self.state == "PROCESSING":
-            sym = "▷" if self._blink else "▶"
-            txt, col = f"{sym}  İŞLİYOR",    qcol(C.ACC2)
+            txt = "İşliyor"
         elif self.state == "LISTENING":
-            sym = "●" if self._blink else "○"
-            txt, col = f"{sym}  DİNLİYOR",   qcol(C.GREEN)
+            txt = "Dinliyor"
+        elif self.state == "SLEEPING":
+            txt = "Ders bekleniyor"
+        elif self.state == "IDLE":
+            txt = "Beklemede"
         else:
-            sym = "●" if self._blink else "○"
-            txt, col = f"{sym}  {self.state}", qcol(C.PRI)
-
-        p.setPen(QPen(col, 1))
-        p.setFont(QFont("Courier New", 11, QFont.Weight.Bold))
+            txt = "Hazırlanıyor"
+        sy = cy + fw * 0.44
+        p.setPen(QPen(renk, 1))
+        p.setFont(QFont(YAZI, 13, QFont.Weight.Medium))
         p.drawText(QRectF(0, sy, W, 26), Qt.AlignmentFlag.AlignCenter, txt)
 
-        # waveform
-        wy = sy + 30
-        N, bw = 36, 8
-        wx0 = (W - N * bw) / 2
-        for i in range(N):
-            if self.muted:
-                hgt, cl = 2, qcol(C.MUTED_C)
-            elif self.speaking:
-                hgt = random.randint(3, 20)
-                cl  = qcol(C.PRI) if hgt > 12 else qcol(C.PRI_DIM)
-            else:
-                hgt = int(3 + 2 * math.sin(self._tick * 0.09 + i * 0.6))
-                cl  = qcol(C.BORDER_B)
-            p.fillRect(QRectF(wx0 + i * bw, wy + 20 - hgt, bw - 1, hgt), cl)
+        # Ses dalgası: yalnızca konuşurken, ortadan simetrik
+        if self.speaking:
+            n = len(self._dalga)
+            bw = max(4.0, fw * 0.012)
+            wy = sy + 38
+            x0 = cx - n * bw
+            for i, v in enumerate(self._dalga):
+                h = 2 + v * 18
+                c = qcol(C.ACC, int(90 + 165 * v))
+                for x in (x0 + i * bw, cx + (n - 1 - i) * bw):
+                    p.fillRect(QRectF(x, wy - h / 2, bw - 1.5, h), c)
+
 
 class MetricBar(QWidget):
 
@@ -744,11 +624,11 @@ class MetricBar(QWidget):
             p.setBrush(QBrush(bar_col))
             p.drawRoundedRect(QRectF(bar_x, bar_y, fill_w, bar_h), 2, 2)
 
-        p.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        p.setFont(QFont(YAZI_MONO, 7, QFont.Weight.Bold))
         p.setPen(QPen(qcol(C.TEXT_DIM), 1))
         p.drawText(QRectF(8, 5, 50, 14), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self._label)
 
-        p.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+        p.setFont(QFont(YAZI_MONO, 9, QFont.Weight.Bold))
         p.setPen(QPen(bar_col if self._text != "--" else qcol(C.TEXT_DIM), 1))
         p.drawText(QRectF(0, 4, W - 6, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, self._text)
 
@@ -758,7 +638,7 @@ class LogWidget(QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setReadOnly(True)
-        self.setFont(QFont("Courier New", 9))
+        self.setFont(QFont(YAZI_MONO, 9))
         self.setStyleSheet(f"""
             QTextEdit {{
                 background: {C.PANEL};
@@ -946,7 +826,7 @@ class FileDropZone(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self._btn = QPushButton("📎  DOSYA EKLE")
         self._btn.setFixedHeight(26)
-        self._btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        self._btn.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
         self._btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn.setStyleSheet(f"""
             QPushButton {{
@@ -1096,7 +976,11 @@ class MainWindow(QMainWindow):
 
     def __init__(self, face_path: str):
         super().__init__()
-        self.setWindowTitle("AYBÜKE — Yapay Zekâ Öğretmen")
+        yazi_tiplerini_yukle()
+        self.setWindowTitle("Aybüke")
+        ikon = BASE_DIR / "assets" / "aybuke-ikon.png"
+        if ikon.exists():
+            self.setWindowIcon(QIcon(str(ikon)))
         self.setMinimumSize(_MIN_W, _MIN_H)
 
         # Ekrana sığdır. Kullanılabilir alan HiDPI ölçeklemede beklenenden
@@ -1194,6 +1078,7 @@ class MainWindow(QMainWindow):
         # a few lines tall. The centre column is becoming a presentation
         # surface; the orb is a status indicator on top of it, not the
         # main event.
+        self.hud.setMinimumHeight(240)
         self.hud.setMaximumHeight(320)
         _center_lay.addWidget(self.hud, stretch=0)
         _center_lay.addWidget(self._build_log_panel(), stretch=1)
@@ -1382,11 +1267,11 @@ class MainWindow(QMainWindow):
 
         def _badge(txt, color=C.TEXT_MED):
             l = QLabel(txt)
-            l.setFont(QFont("Courier New", 8))
+            l.setFont(QFont(YAZI, 8))
             l.setStyleSheet(f"color: {color}; background: transparent;")
             return l
 
-        lay.addWidget(_badge("MUALLİM-İ SÂNÎ", C.PRI_DIM))
+        lay.addWidget(_badge("Kurşunlu Şehit Murat Ustaoğlu Anadolu Lisesi", C.TEXT_DIM))
         lay.addStretch()
 
         mid = QVBoxLayout(); mid.setSpacing(1)
@@ -1396,23 +1281,16 @@ class MainWindow(QMainWindow):
         flag.setFont(QFont("Noto Color Emoji", 13))
         flag.setStyleSheet("background: transparent;")
         title_row.addWidget(flag)
-        title = QLabel("AYBÜKE")
+        title = QLabel("Aybüke")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # Yalnızca bu rozet italik serif — "İlim Işığı" temasının hattat
-        # karakterini markaya taşıyor. Diğer HER YERDE (saat, yüzdeler,
-        # log) Courier New KASITLI olarak korundu: o metinler tablo gibi
-        # hizalı görüntüleniyor (ör. MetricBar yüzdeleri), orantılı bir
-        # yazı tipi bu hizayı bozardı. Cormorant Garamond bu tahtada kurulu
-        # değilse Qt sessizce sistem serifine düşer — kırılma riski yok,
-        # yalnızca bu tek etikette hattat hissi kaybolur.
-        title.setFont(QFont("Cormorant Garamond", 20, QFont.Weight.DemiBold, italic=True))
+        title.setFont(QFont(YAZI, 20, QFont.Weight.DemiBold))
         title.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         title_row.addWidget(title)
         title_row.addStretch()
         mid.addLayout(title_row)
         sub = QLabel("Yapay Zekâ Öğretmen Yardımcısı")
         sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        sub.setFont(QFont("Courier New", 7))
+        sub.setFont(QFont(YAZI, 7))
         sub.setStyleSheet(f"color: {C.PRI_DIM}; background: transparent;")
         mid.addWidget(sub)
         lay.addLayout(mid)
@@ -1420,12 +1298,12 @@ class MainWindow(QMainWindow):
 
         right_col = QVBoxLayout(); right_col.setSpacing(2)
         self._clock_lbl = QLabel("00:00:00")
-        self._clock_lbl.setFont(QFont("Courier New", 14, QFont.Weight.Bold))
+        self._clock_lbl.setFont(QFont(YAZI_MONO, 14, QFont.Weight.Bold))
         self._clock_lbl.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         self._clock_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
         right_col.addWidget(self._clock_lbl)
         self._date_lbl = QLabel("")
-        self._date_lbl.setFont(QFont("Courier New", 7))
+        self._date_lbl.setFont(QFont(YAZI, 7))
         self._date_lbl.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
         self._date_lbl.setAlignment(Qt.AlignmentFlag.AlignRight)
         right_col.addWidget(self._date_lbl)
@@ -1464,7 +1342,7 @@ class MainWindow(QMainWindow):
         lay.setSpacing(6)
 
         hdr = QLabel("◈ SİSTEM")
-        hdr.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        hdr.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
         hdr.setStyleSheet(f"color: {C.PRI}; background: transparent; "
                           f"border-bottom: 1px solid {C.BORDER}; padding-bottom: 4px;")
         lay.addWidget(hdr)
@@ -1491,18 +1369,18 @@ class MainWindow(QMainWindow):
         ip_lay.setSpacing(3)
 
         self._uptime_lbl = QLabel("UP  --:--")
-        self._uptime_lbl.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
+        self._uptime_lbl.setFont(QFont(YAZI_MONO, 8, QFont.Weight.Bold))
         self._uptime_lbl.setStyleSheet(f"color: {C.GREEN}; background: transparent; border: none;")
         ip_lay.addWidget(self._uptime_lbl)
 
         self._proc_lbl = QLabel("PROC  --")
-        self._proc_lbl.setFont(QFont("Courier New", 8))
+        self._proc_lbl.setFont(QFont(YAZI, 8))
         self._proc_lbl.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent; border: none;")
         ip_lay.addWidget(self._proc_lbl)
 
         os_name = {"Windows": "WIN", "Darwin": "macOS", "Linux": "LINUX"}.get(_OS, _OS.upper())
         os_lbl = QLabel(f"OS  {os_name}")
-        os_lbl.setFont(QFont("Courier New", 8))
+        os_lbl.setFont(QFont(YAZI, 8))
         os_lbl.setStyleSheet(f"color: {C.ACC2}; background: transparent; border: none;")
         ip_lay.addWidget(os_lbl)
 
@@ -1523,7 +1401,7 @@ class MainWindow(QMainWindow):
 
         derslik_ad = tahta.etiket() if tahta else ""
         self._derslik_lbl = QLabel(derslik_ad)
-        self._derslik_lbl.setFont(QFont("Courier New", 17, QFont.Weight.Bold))
+        self._derslik_lbl.setFont(QFont(YAZI, 17, QFont.Weight.Bold))
         renk = C.ACC if derslik_ad and "TANIMSIZ" not in derslik_ad else C.RED
         self._derslik_lbl.setStyleSheet(
             f"color: {renk}; background: transparent; border: none;")
@@ -1539,20 +1417,20 @@ class MainWindow(QMainWindow):
         zp.addSpacing(2)
 
         self._saat_lbl = QLabel("--:--:--")
-        self._saat_lbl.setFont(QFont("Courier New", 15, QFont.Weight.Bold))
+        self._saat_lbl.setFont(QFont(YAZI_MONO, 15, QFont.Weight.Bold))
         self._saat_lbl.setStyleSheet(f"color: {C.PRI}; background: transparent; border: none;")
         self._saat_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         zp.addWidget(self._saat_lbl)
 
         self._tarih_lbl = QLabel("")
-        self._tarih_lbl.setFont(QFont("Courier New", 7))
+        self._tarih_lbl.setFont(QFont(YAZI, 7))
         self._tarih_lbl.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent; border: none;")
         self._tarih_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._tarih_lbl.setWordWrap(True)
         zp.addWidget(self._tarih_lbl)
 
         self._ders_lbl = QLabel("")
-        self._ders_lbl.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
+        self._ders_lbl.setFont(QFont(YAZI, 8, QFont.Weight.Bold))
         self._ders_lbl.setStyleSheet(f"color: {C.GREEN}; background: transparent; border: none;")
         self._ders_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._ders_lbl.setWordWrap(True)
@@ -1580,12 +1458,12 @@ class MainWindow(QMainWindow):
         gp.setSpacing(3)
 
         gp_hdr = QLabel("◈ GEMINI")
-        gp_hdr.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        gp_hdr.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
         gp_hdr.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent; border: none;")
         gp.addWidget(gp_hdr)
 
         self._gemini_sure_lbl = QLabel("BUGÜN  --")
-        self._gemini_sure_lbl.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
+        self._gemini_sure_lbl.setFont(QFont(YAZI, 8, QFont.Weight.Bold))
         self._gemini_sure_lbl.setStyleSheet(f"color: {C.PRI}; background: transparent; border: none;")
         self._gemini_sure_lbl.setToolTip(
             "Bu süreçte bugün açık kalan Gemini Live oturumlarının toplam "
@@ -1593,7 +1471,7 @@ class MainWindow(QMainWindow):
         gp.addWidget(self._gemini_sure_lbl)
 
         self._gemini_anahtar_lbl = QLabel("ANAHTAR  --")
-        self._gemini_anahtar_lbl.setFont(QFont("Courier New", 8))
+        self._gemini_anahtar_lbl.setFont(QFont(YAZI, 8))
         self._gemini_anahtar_lbl.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent; border: none;")
         self._gemini_anahtar_lbl.setToolTip(
             "config/api_keys.json havuzunda aktif anahtar sırası "
@@ -1604,8 +1482,8 @@ class MainWindow(QMainWindow):
 
         lay.addStretch()
 
-        # Alttaki üç dekoratif rozet ("YAPAY ZEKÂ AKTİF" / "BAĞLANTI GÜVENLİ" /
-        # "MUALLİM-İ SÂNÎ") kaldırıldı: ~100 piksel dikey yer yiyorlardı ve
+        # Alttaki dekoratif rozetler ("YAPAY ZEKÂ AKTİF" / "BAĞLANTI GÜVENLİ")
+        # kaldırıldı: ~100 piksel dikey yer yiyorlardı ve
         # hiçbir bilgi taşımıyorlardı — "BAĞLANTI GÜVENLİ" doğrulanmış bir
         # durum bile değildi. HiDPI ekranda (kullanılabilir yükseklik 590)
         # o yer derslik/saat/ders paneline gerekiyor; bilgi dekorasyondan
@@ -1620,12 +1498,12 @@ class MainWindow(QMainWindow):
         lay.setSpacing(5)
 
         hdr = QLabel("▸ DERS KAYDI")
-        hdr.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+        hdr.setFont(QFont(YAZI, 9, QFont.Weight.Bold))
         hdr.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent;")
         lay.addWidget(hdr)
 
         self._log = LogWidget()
-        self._log.setFont(QFont("Courier New", 12))
+        self._log.setFont(QFont(YAZI_MONO, 12))
         lay.addWidget(self._log, stretch=1)
         return w
 
@@ -1634,7 +1512,7 @@ class MainWindow(QMainWindow):
         (kalibrasyon, kitap/YKS dönüştürme, sembol temizleme, özet çıkarma)."""
         btn = QPushButton(metin)
         btn.setFixedHeight(26)
-        btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        btn.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         btn.setStyleSheet(f"""
             QPushButton {{
@@ -1657,7 +1535,7 @@ class MainWindow(QMainWindow):
 
         def _sec(txt):
             l = QLabel(f"▸ {txt}")
-            l.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+            l.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
             l.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent;")
             return l
 
@@ -1673,7 +1551,7 @@ class MainWindow(QMainWindow):
         lay.addWidget(self._drop_zone)
 
         self._file_hint = QLabel("Dosya yok")
-        self._file_hint.setFont(QFont("Courier New", 7))
+        self._file_hint.setFont(QFont(YAZI, 7))
         self._file_hint.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent;")
         self._file_hint.setWordWrap(True)
         lay.addWidget(self._file_hint)
@@ -1694,7 +1572,7 @@ class MainWindow(QMainWindow):
 
         self._mute_btn = QPushButton("🎙  MİKROFON AÇIK")
         self._mute_btn.setFixedHeight(30)
-        self._mute_btn.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
+        self._mute_btn.setFont(QFont(YAZI, 8, QFont.Weight.Bold))
         self._mute_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._mute_btn.clicked.connect(self._toggle_mute)
         self._style_mute_btn()
@@ -1707,7 +1585,7 @@ class MainWindow(QMainWindow):
 
         fs_btn = QPushButton("⛶  TAM EKRAN  [F11]")
         fs_btn.setFixedHeight(26)
-        fs_btn.setFont(QFont("Courier New", 7))
+        fs_btn.setFont(QFont(YAZI, 7))
         fs_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         fs_btn.setStyleSheet(f"""
             QPushButton {{
@@ -1778,7 +1656,7 @@ class MainWindow(QMainWindow):
         for i, (etiket, anahtar, _) in enumerate(self.OGRETMEN_KOMUTLARI):
             b = QPushButton(etiket)
             b.setFixedHeight(26)
-            b.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+            b.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.setStyleSheet(stil)
             b.clicked.connect(lambda _=False, a=anahtar: self._ogretmen_komutu(a))
@@ -1792,7 +1670,7 @@ class MainWindow(QMainWindow):
         # dokunmatik tahtada geçen bir öğrenci tek tıkla dersi bitirmemeli.
         self._bitir_btn = QPushButton("⏹  DERSİ BİTİR  (çift tıkla)")
         self._bitir_btn.setFixedHeight(26)
-        self._bitir_btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        self._bitir_btn.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
         self._bitir_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._bitir_btn.setStyleSheet(stil + f"""
             QPushButton {{ color: {C.RED}; border: 1px solid {C.RED}; }}
@@ -1811,7 +1689,7 @@ class MainWindow(QMainWindow):
         # herhangi bir öğrenci geçerken tek tıkla ders başlatabilirdi.
         self._baslat_btn = QPushButton("▶▶  DERSİ BAŞLAT  (çift tıkla)")
         self._baslat_btn.setFixedHeight(30)
-        self._baslat_btn.setFont(QFont("Courier New", 8, QFont.Weight.Bold))
+        self._baslat_btn.setFont(QFont(YAZI, 8, QFont.Weight.Bold))
         self._baslat_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._baslat_btn.setStyleSheet(stil + f"""
             QPushButton {{ color: {C.ACC}; border: 1px solid {C.ACC}; }}
@@ -1840,7 +1718,7 @@ class MainWindow(QMainWindow):
         self._ogretmen_btn = QPushButton("👨‍🏫  ÖĞRETMEN MODU")
         for b in (self._ogrenci_btn, self._ogretmen_btn):
             b.setFixedHeight(24)
-            b.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+            b.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
             b.setCursor(Qt.CursorShape.PointingHandCursor)
         self._ogrenci_btn.clicked.connect(lambda: self._talimat_modu_degistir(False))
         self._ogretmen_btn.clicked.connect(lambda: self._talimat_modu_degistir(True))
@@ -1862,7 +1740,7 @@ class MainWindow(QMainWindow):
         for etiket, kod in [("🇬🇧  İNGİLİZCE", "en"), ("🇩🇪  ALMANCA", "de")]:
             b = QPushButton(etiket)
             b.setFixedHeight(24)
-            b.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+            b.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.clicked.connect(lambda _=False, k=kod: self._ders_dili_sec(k))
             self._dil_btns[kod] = b
@@ -1881,7 +1759,7 @@ class MainWindow(QMainWindow):
         # değere döner.
         self._mikrofon_mod_btn = QPushButton()
         self._mikrofon_mod_btn.setFixedHeight(24)
-        self._mikrofon_mod_btn.setFont(QFont("Courier New", 7, QFont.Weight.Bold))
+        self._mikrofon_mod_btn.setFont(QFont(YAZI, 7, QFont.Weight.Bold))
         self._mikrofon_mod_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._mikrofon_mod_btn.setStyleSheet(stil)
         self._mikrofon_mod_btn.clicked.connect(self._mikrofon_modu_degistir)
@@ -2072,7 +1950,7 @@ class MainWindow(QMainWindow):
         row = QHBoxLayout(); row.setSpacing(5)
         self._input = QLineEdit()
         self._input.setPlaceholderText("Talimat yaz…  (öğretmen)")
-        self._input.setFont(QFont("Courier New", 9))
+        self._input.setFont(QFont(YAZI, 9))
         self._input.setFixedHeight(30)
         self._input.setStyleSheet(f"""
             QLineEdit {{
@@ -2086,7 +1964,7 @@ class MainWindow(QMainWindow):
 
         send = QPushButton("▸")
         send.setFixedSize(30, 30)
-        send.setFont(QFont("Courier New", 11, QFont.Weight.Bold))
+        send.setFont(QFont(YAZI, 11, QFont.Weight.Bold))
         send.setCursor(Qt.CursorShape.PointingHandCursor)
         send.setStyleSheet(f"""
             QPushButton {{
@@ -2133,12 +2011,12 @@ class MainWindow(QMainWindow):
         hdr = QHBoxLayout(); hdr.setSpacing(8)
 
         dot = QLabel("◈")
-        dot.setFont(QFont("Courier New", 15, QFont.Weight.Bold))
+        dot.setFont(QFont(YAZI, 15, QFont.Weight.Bold))
         dot.setStyleSheet(f"color: {C.PRI}; background: transparent;")
         hdr.addWidget(dot)
 
         self._content_title_lbl = QLabel("BRIEFING")
-        self._content_title_lbl.setFont(QFont("Courier New", 15, QFont.Weight.Bold))
+        self._content_title_lbl.setFont(QFont(YAZI, 15, QFont.Weight.Bold))
         self._content_title_lbl.setStyleSheet(
             f"color: {C.PRI}; background: transparent; letter-spacing: 1px;"
         )
@@ -2146,14 +2024,14 @@ class MainWindow(QMainWindow):
         hdr.addStretch()
 
         self._content_ts_lbl = QLabel("")
-        self._content_ts_lbl.setFont(QFont("Courier New", 9))
+        self._content_ts_lbl.setFont(QFont(YAZI, 9))
         self._content_ts_lbl.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
         hdr.addWidget(self._content_ts_lbl)
 
         # Sağ üstte, belirgin — asıl şikayet konusu buydu: eski ✕ 20x18px'ti
         # ve köşede kayboluyordu.
         dismiss = QPushButton("✕  KAPAT")
-        dismiss.setFont(QFont("Courier New", 10, QFont.Weight.Bold))
+        dismiss.setFont(QFont(YAZI, 10, QFont.Weight.Bold))
         dismiss.setFixedHeight(32)
         dismiss.setCursor(Qt.CursorShape.PointingHandCursor)
         dismiss.setStyleSheet(f"""
@@ -2176,7 +2054,7 @@ class MainWindow(QMainWindow):
         # tam metni). Eski 9pt sidebar boyutundan kalkıldı.
         self._content_display = QTextEdit()
         self._content_display.setReadOnly(True)
-        self._content_display.setFont(QFont("Courier New", 15))
+        self._content_display.setFont(QFont(YAZI, 15))
         self._content_display.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._content_display.setStyleSheet(f"""
             QTextEdit {{
@@ -2216,7 +2094,7 @@ class MainWindow(QMainWindow):
                             (self._resim_sigdir_btn, 104),
                             (self._resim_yakinlastir_btn, 44)):
             b.setFixedSize(genislik, 30)
-            b.setFont(QFont("Courier New", 12, QFont.Weight.Bold))
+            b.setFont(QFont(YAZI, 12, QFont.Weight.Bold))
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.setStyleSheet(f"""
                 QPushButton {{
@@ -2247,7 +2125,7 @@ class MainWindow(QMainWindow):
         self._cizim_temizle_btn = QPushButton("🗑  TEMİZLE")
         for b in (self._kalem_btn, self._silgi_btn, self._cizim_temizle_btn):
             b.setFixedSize(88, 30)
-            b.setFont(QFont("Courier New", 9, QFont.Weight.Bold))
+            b.setFont(QFont(YAZI, 9, QFont.Weight.Bold))
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.setStyleSheet(_arac_btn_stili(False))
             zoom_row.addWidget(b)
@@ -2305,7 +2183,7 @@ class MainWindow(QMainWindow):
         lay.addWidget(self._image_scroll, stretch=1)
 
         hint = QLabel("[ESC]  ya da  ✕ KAPAT  ile ekranı kapat")
-        hint.setFont(QFont("Courier New", 8))
+        hint.setFont(QFont(YAZI, 8))
         hint.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
         hint.setAlignment(Qt.AlignmentFlag.AlignRight)
         lay.addWidget(hint)
@@ -2451,15 +2329,12 @@ class MainWindow(QMainWindow):
         lay = QHBoxLayout(w); lay.setContentsMargins(14, 0, 14, 0)
 
         def _fl(txt, color=C.TEXT_MED):
-            l = QLabel(txt); l.setFont(QFont("Courier New", 7))
+            l = QLabel(txt); l.setFont(QFont(YAZI, 7))
             l.setStyleSheet(f"color: {color}; background: transparent;")
             return l
 
-        lay.addWidget(_fl("[F4] Mikrofon  ·  [F11] Tam Ekran"))
+        lay.addWidget(_fl("F4 mikrofonu açar/kapatır, F11 tam ekran"))
         lay.addStretch()
-        lay.addWidget(_fl("AYBÜKE  ·  SINIF ÖĞRETMEN ASİSTANI"))
-        lay.addStretch()
-        lay.addWidget(_fl("MUALLİM-İ SÂNÎ", C.PRI_DIM))
         return w
 
     def _on_file_selected(self, path: str):
