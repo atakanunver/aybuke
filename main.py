@@ -177,10 +177,24 @@ _TALIMAT_PERSONASI = (
     "- Her zaman Türkçe konuş.\n"
 )
 
-# Bu kadar dakika hiç konuşma/öğretmen girdisi olmazsa ders kaydı kapatılıp
-# çıkılır. Canlı ses oturumu açık kaldığı sürece ücretli; unutulmuş bir tahta
-# bütün geceyi bağlı geçirir.
-BOSTA_KAPATMA_DK = 15
+# Bu kadar dakika hiç konuşma/öğretmen girdisi olmazsa ders kapatılır. Canlı
+# ses oturumu açık kaldığı sürece ücretli (mikrofon açıkken sınıfın sesi
+# sürekli girdi tokeni olarak akar); unutulmuş bir tahta saatlerce bağlı kalır.
+BOSTA_KAPATMA_DK = 8
+
+# ── Maliyet: bağlam penceresi sıkıştırma ─────────────────────────────────────
+# Live her turda o ana kadarki TÜM bağlamı yeniden işler ve faturalar; 40
+# dakikalık bir derste bağlam büyüdükçe tur başına maliyet de büyür. Bağlam
+# BAGLAM_TETIK_TOKEN'a ulaşınca en eski konuşma turları atılıp
+# BAGLAM_HEDEF_TOKEN'a inilir (sistem promptu korunur). Sabit yük (prompt +
+# araç tanımları) ~13-16 bin token; hedef bunun üstünde kalmalı ki son
+# birkaç dakikanın konuşması da bağlamda dursun. Değerleri TOKEN satırlarıyla
+# (logs/aybuke.log, `en_buyuk_baglam`) ölçerek ayarla.
+BAGLAM_TETIK_TOKEN = 40_000
+BAGLAM_HEDEF_TOKEN = 24_000
+
+# Modele gönderilen ekran görüntüsünün uzun kenarı (piksel).
+EKRAN_AZAMI_PX = 768
 
 # Mikrofonsuz modda (config "mikrofon": false) zil çizelgesi yoksa dersin
 # ne zaman biteceğini bilen başka bir şey yok — otomatik devam sonsuza kadar
@@ -188,6 +202,14 @@ BOSTA_KAPATMA_DK = 15
 MIKSIZ_DERS_DK = 40
 # Zil çizelgesi varsa kalan süre bu kadar dakikaya inince kapanışa geçilir.
 MIKSIZ_KAPANIS_KALAN_DK = 2
+
+
+def _baglam_sikistirma() -> types.ContextWindowCompressionConfig:
+    """Kayan pencere bağlam sıkıştırması (bkz. BAGLAM_TETIK_TOKEN)."""
+    return types.ContextWindowCompressionConfig(
+        trigger_tokens=BAGLAM_TETIK_TOKEN,
+        sliding_window=types.SlidingWindow(target_tokens=BAGLAM_HEDEF_TOKEN),
+    )
 
 MIKSIZ_KURALLARI = (
     "[MİKROFONSUZ MOD — YUKARIDAKİ KURALLARDAN ÖNCE GELİR]\n"
@@ -775,9 +797,12 @@ class AybukeLive:
         try:
             with Image.open(yol) as im:
                 im = im.convert("RGB")
-                im.thumbnail((1024, 1024))
+                # 768 px: Gemini görselleri 768x768'lik karolarla tokenlar;
+                # 1024 px geniş bir ekran 2+ karo ederken 768 px tek karoya
+                # yaklaşır. Tahtadaki soru metni bu boyutta hâlâ okunur.
+                im.thumbnail((EKRAN_AZAMI_PX, EKRAN_AZAMI_PX))
                 arabellek = BytesIO()
-                im.save(arabellek, format="JPEG", quality=70)
+                im.save(arabellek, format="JPEG", quality=65)
                 jpeg = arabellek.getvalue()
         except (OSError, ValueError) as e:
             log.error("Ekran görüntüsü okunamadı/ölçeklenemedi (%s): %s", yol, e)
@@ -1032,6 +1057,7 @@ class AybukeLive:
             # GÜRÜLTÜ" kuralıyla (tek tek konuşalım uyarısı) ele alınıyor —
             # yani model tarafında, ses katmanında değil.
             session_resumption=types.SessionResumptionConfig(),
+            context_window_compression=_baglam_sikistirma(),
             # thinking_config GÖNDERİLMEZ. include_thoughts=False da,
             # thinking_budget=0 da bu modeli susturuyordu: her tur ses
             # üretmeden kapanıyor, tahta "dinliyor"da kalıyordu (ölçüldü).
@@ -1062,6 +1088,7 @@ class AybukeLive:
             output_audio_transcription={},
             input_audio_transcription={},
             session_resumption=types.SessionResumptionConfig(),
+            context_window_compression=_baglam_sikistirma(),
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(
@@ -1655,10 +1682,10 @@ class AybukeLive:
 
     # Aybüke'nin sesi bittikten sonra [DEVAM] öncesi beklenecek süre — sınıfa
     # sorulan sorunun ardından kısa bir düşünme anı da budur.
-    DEVAM_BEKLEME_SN = 2.5
+    DEVAM_BEKLEME_SN = 4.0
     # Model hiçbir şey söylemeden turu kapattıysa [DEVAM] hemen yinelenmez —
-    # yoksa boş turlarla 2,5 sn'de bir dönen bir döngü oluşur.
-    BOS_TUR_BEKLEME_SN = 10.0
+    # yoksa boş turlarla birkaç saniyede bir dönen bir döngü oluşur.
+    BOS_TUR_BEKLEME_SN = 20.0
 
     def _devam_karari(self, simdi: float) -> str | None:
         """
@@ -1707,8 +1734,10 @@ class AybukeLive:
                 "[DEVAM] Bu etiketi SESLİ OKUMA. Sınıf seni duyamıyor, cevap "
                 "gelmeyecek; beklemeden anlatmayı sürdür. Az önce bir soru "
                 "sorduysan cevabını şimdi kendin açıkla. Sonra planındaki bir "
-                "sonraki adıma geç. Selamlama yapma, 'devam ediyorum' deme, "
-                "söylediklerini tekrar etme."
+                "sonraki adıma geç ve onu TEK SEFERDE, en az beş-altı cümlelik "
+                "bütünlüklü bir bölüm olarak anlat — kısa parçalara bölme. "
+                "Selamlama yapma, 'devam ediyorum' deme, söylediklerini tekrar "
+                "etme."
             )
             # INFO: tahtaları uzaktan duyamıyoruz, döngünün çalıştığının tek
             # kanıtı aybuke.log (ders başına ~80 satır, rotating log kaldırır).

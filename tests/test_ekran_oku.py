@@ -140,9 +140,9 @@ def test_ekrani_modele_gonder_kullanici_turu_ve_kucultme(tmp_path):
 
     from PIL import Image
     with Image.open(BytesIO(inline["data"])) as im:
-        assert max(im.size) <= 1024
-        # En-boy oranı korunmalı: 2000x1000 -> 1024x512
-        assert im.size == (1024, 512)
+        assert max(im.size) <= main.EKRAN_AZAMI_PX
+        # En-boy oranı korunmalı: 2000x1000 -> 768x384
+        assert im.size == (768, 384)
 
 
 def test_ekrani_modele_gonder_gonderim_patlarsa_false(tmp_path):

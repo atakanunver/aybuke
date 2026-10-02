@@ -108,6 +108,17 @@ def test_talimat_thinking_config_gonderilmiyor(talimat_config):
     assert talimat_config.thinking_config is None
 
 
+def test_baglam_sikistirma_iki_kipte_de_acik(config, talimat_config):
+    """Maliyet: bağlam TETIK'e ulaşınca HEDEF'e indirilir; hedef tetikten
+    küçük ve sabit yükün (~13-16 bin token) üstünde olmalı."""
+    for c in (config, talimat_config):
+        cw = c.context_window_compression
+        assert cw is not None
+        assert cw.trigger_tokens == main.BAGLAM_TETIK_TOKEN
+        assert cw.sliding_window.target_tokens == main.BAGLAM_HEDEF_TOKEN
+    assert 16_000 < main.BAGLAM_HEDEF_TOKEN < main.BAGLAM_TETIK_TOKEN
+
+
 class TestDersDili:
     """
     ui.ders_dili yoksa (bare test double, self.ui hiç yok) ya da 'tr' ise
