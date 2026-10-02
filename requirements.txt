@@ -1,0 +1,32 @@
+# Aybüke — bağımlılıklar (hedef: Linux akıllı tahta). Gerçek import kümesinden
+# türetilir; doğrulama: temiz bir venv'de python -c "import main"
+
+# ── Çekirdek: arayüz, ses, model ────────────────────────────────────────────
+PyQt6                      # ui.py
+sounddevice                # main.py — mikrofon/hoparlör
+google-genai               # Gemini — canlı ses + metin/görü görevleri
+numpy
+pillow
+requests
+psutil                     # ui.py sol sütun sistem metrikleri
+
+# ── Web arama ───────────────────────────────────────────────────────────────
+beautifulsoup4
+lxml                       # web_search.py BeautifulSoup(..., "lxml") ile ayrıştırıyor
+ddgs                       # web_search.py'nin BİRİNCİL arama kaynağı — ham sonuçlar
+                           # buradan gelir, sentezi core/saglayicilar.py yapar
+                           # (eski adı duckduckgo-search; kod ikisini de deniyor)
+
+# ── EBA PDF metni (actions/eba.py) ──────────────────────────────────────────
+# PyPDF2/pdfplumber yalnızca actions/eba.py'nin indirdiği EBA soru PDF'lerinden
+# metin çıkarmak için. Yüklenen PDF'leri (file_processor) Gemini doğrudan okur.
+PyPDF2
+pdfplumber
+
+# ── Word / Excel okuma (actions/file_processor.py) ─────────────────────────
+# Gemini .docx/.xlsx'i doğrudan okumaz; metin yerelde çıkarılıp gönderilir.
+python-docx
+openpyxl
+# ── YouTube ─────────────────────────────────────────────────────────────────
+youtube-transcript-api
+
