@@ -39,8 +39,6 @@ from pathlib import Path
 GEOGEBRA_YOLLARI = [
     Path(__file__).resolve().parent.parent / "icerik" / "geogebra" / "GeoGebra",
     Path.home() / "geogebra" / "bundle" / "GeoGebra",
-    # Okul tahtalarında paketin önceden kurulu olduğu yer (yalnızca okunur).
-    Path.home() / "farabi" / "client" / "icerik" / "geogebra" / "GeoGebra",
 ]
 
 PROFIL_DIZINI = Path.home() / ".cache" / "aybuke-geogebra-chrome"

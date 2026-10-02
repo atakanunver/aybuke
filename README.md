@@ -29,8 +29,8 @@ Sistem paketleri: `libportaudio2`, `libxcb-cursor0`, `wmctrl`, `xprop`
 
 GeoGebra çevrimdışı paketi (~120 MB, Math Apps Bundle) repoda yoktur ve
 indirilmez; `actions/geogebra.py::GEOGEBRA_YOLLARI`'ndaki yollardan birinde
-(ör. `~/geogebra/bundle/GeoGebra`) kurulu olmalıdır. Okul tahtalarında
-paket zaten kuruludur.
+(`icerik/geogebra/GeoGebra` ya da `~/geogebra/bundle/GeoGebra`) kurulu
+olmalıdır. Paket yoksa GeoGebra aracı açılmaz, ders bozulmaz.
 
 ## Maliyet notu
 

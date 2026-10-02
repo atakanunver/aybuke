@@ -17,3 +17,7 @@
 - Tek yazı ailesi Lexend (OFL, assets/fonts'a gömülü, CDN yok); hizalı rakamlar (saat, metrik, log) DejaVu Sans Mono.
 - HUD'daki GIF/nişangâh/tarama çizgileri yerine canlı sekiz köşeli Selçuklu yıldızı (iki karenin birleşimi); logo ve ikon aynı `ui.amblem_ciz` fonksiyonundan `tools/logo_uret.py` ile üretilir — arayüzle logo ayrışmaz.
 - Afişteki yazılar yapay zekâ bozukluğu taşıdığı için afiş logo olarak kullanılmadı, yalnızca renk/motif kaynağı oldu.
+
+## 2026-10-02 - Ders prompt'undan talimat modu bölümü çıkarıldı; sunucu bağı sıfırlandı
+- Talimat modu kendi personasıyla (`main.py::_TALIMAT_PERSONASI`) açıldığı için `core/prompt.txt`'teki talimat modu bölümü yalnızca ders oturumunda boşa gidiyordu. Çıkarıldı: ilk tur sabit yükü 14.342 → 13.508 token (gerçek oturumla ölçüldü, tur başına %5,8).
+- GeoGebra paket yollarından eski kurulum klasörüne bakan yedek yol kaldırıldı. Çalışma anında bağlanılan tek dış servis Gemini; diğerleri halka açık siteler (YouTube, Google, EBA, Vikipedi, MEB) ve 127.0.0.1'deki kendi GeoGebra köprüsü.
